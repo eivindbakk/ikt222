@@ -1,0 +1,26 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>XSS Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { max-width: 900px; margin: 2rem auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.4; }
+        nav a { margin-right: 1rem; }
+        .post { border: 1px solid #ddd; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; background: #fafafa; }
+        .meta { font-size: 0.9rem; color: #555; margin-bottom: .5rem; }
+        .danger { color: #b00020; font-weight: bold; }
+        code { background: #f2f2f2; padding: 0 .25rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="{{ url_for('vuln_posts') }}">Vulnerable view</a>
+    <a href="{{ url_for('safe_posts') }}">Safe view</a>
+    <a href="{{ url_for('add') }}">Add post</a>
+    <a href="{{ url_for('stolen') }}">Stolen log (JSON)</a>
+</nav>
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>
