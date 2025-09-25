@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="layout">
+  <main class="col-main">
+    <div class="card">
+      <h2>@{{ user.username }}</h2>
+      <p class="meta">Joined: {{ user.created_at }}</p>
+      {% if prof and prof.bio %}
+        <p class="content">{{ prof.bio }}</p>
+      {% else %}
+        <p class="meta">No bio yet.</p>
+      {% endif %}
+      <div class="row" style="margin-top:.6rem">
+        <span class="meta">{{ stats.posts }} posts</span>
+        <span class="meta">{{ stats.followers }} followers</span>
+        <span class="meta">{{ stats.following }} following</span>
+      </div>
+
+      {% if is_me %}
+        <form method="post" style="margin-top:.8rem">
+          <textarea name="bio" rows="3" placeholder="Write a short bio…">{{ prof.bio if prof else '' }}</textarea>
+          <div style="height:.5rem"></div>
+          <button class="btn">Save bio</button>
+        </form>
+      {% else %}
+        {% if me %}
+          <form method="post" action="{{ url_for('unfollow' if i_follow else 'follow', username=user.username) }}" style="margin-top:.5rem">
+            <button class="btn">{{ 'Unfollow' if i_follow else 'Follow' }}</button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {% for p in posts %}
+      <div class="card">
+        <div class="meta">{{ p.created_at }}</div>
+        <div class="content">{{ p.content }}</div>
+      </div>
+    {% else %}
+      <div class="card">No posts yet.</div>
+    {% endfor %}
+  </main>
+
+  <aside class="col-side">
+    <div class="card small">
+      <div class="meta">Profile</div>
+      <p class="meta">This is the user profile page.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

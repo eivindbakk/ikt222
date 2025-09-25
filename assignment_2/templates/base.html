@@ -1,26 +1,37 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>XSS Demo</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { max-width: 900px; margin: 2rem auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.4; }
-        nav a { margin-right: 1rem; }
-        .post { border: 1px solid #ddd; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; background: #fafafa; }
-        .meta { font-size: 0.9rem; color: #555; margin-bottom: .5rem; }
-        .danger { color: #b00020; font-weight: bold; }
-        code { background: #f2f2f2; padding: 0 .25rem; border-radius: 4px; }
-    </style>
+  <meta charset="utf-8">
+  <title>XSS Social</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
-<nav>
-    <a href="{{ url_for('vuln_posts') }}">Vulnerable view</a>
-    <a href="{{ url_for('safe_posts') }}">Safe view</a>
-    <a href="{{ url_for('add') }}">Add post</a>
-    <a href="{{ url_for('stolen') }}">Stolen log (JSON)</a>
-</nav>
-<hr>
-{% block content %}{% endblock %}
+  <nav>
+    <span class="headerTitle">XSS Social</span>
+    <a href="{{ url_for('feed_vuln') }}">Feed (vulnerable)</a>
+    <a href="{{ url_for('feed_safe') }}">Feed (safe)</a>
+    {% if me %}
+      <a href="{{ url_for('feed_following') }}">Following</a>
+      <a href="{{ url_for('compose') }}">Compose</a>
+      <a href="{{ url_for('profile', username=me['username']) }}">My profile</a>
+    {% endif %}
+    <div style="flex:1"></div>
+    {% if me %}
+      <span class="meta">@{{ me['username'] }}</span>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+  </nav>
+
+  <div class="container">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{cat}}">{{ msg }}</div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+  </div>
 </body>
 </html>

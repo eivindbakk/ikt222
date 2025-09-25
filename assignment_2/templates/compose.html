@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Compose</h2>
+<form method="post" class="card">
+  <textarea name="content" rows="4" placeholder="What's happening?" required></textarea>
+  <div style="height:.6rem"></div>
+  <button class="btn">Post</button>
+</form>
+<p class="meta">Tip: For the XSS demo, post payloads on the vulnerable feed only.</p>
+{% endblock %}

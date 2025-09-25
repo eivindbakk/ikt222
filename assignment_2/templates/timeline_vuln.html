@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Home — Vulnerable feed</h2>
+<p class="meta">⚠️ This feed deliberately renders user HTML without escaping (XSS demo).</p>
+{% for p in posts %}
+  <div class="card">
+    <div class="meta">
+      <a href="{{ url_for('profile', username=p.username) }}">@{{ p.username }}</a> • {{ p.created_at }}
+    </div>
+    <div class="content">{{ p.content_html }}</div> <!-- intentionally unsafe -->
+  </div>
+{% else %}
+  <div class="card">No posts yet.</div>
+{% endfor %}
+{% endblock %}
