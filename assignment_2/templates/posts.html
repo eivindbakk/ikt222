@@ -1,0 +1,77 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<!-- Normalize header spacing so page top aligns with other pages -->
+<style>
+    /* page-local: make header spacing consistent with other templates */
+    .posts-header h2 { margin: 0 0 .5rem 0; }
+    .posts-header .meta { margin-top: .4rem; }
+</style>
+
+<div class="posts-header">
+    <h2>All posts{% if username %} — @{{ username }}{% endif %}</h2>
+    <p class="meta">
+        {% if username %}
+        Showing recent posts by @{{ username }}.
+        <a href="{{ url_for('posts_all') }}">Clear filter</a>
+        {% else %}
+        Showing all recent posts (newest first).
+        {% endif %}
+    </p>
+</div>
+
+<div class="layout">
+    <main class="col-main">
+        {% for p in posts %}
+        <div class="card">
+            <div class="meta">
+                <a href="{{ url_for('profile', username=p.username) }}">@{{ p.username }}</a>
+                • {{ p.created_at }}
+                • <span style="opacity:.6;">ID {{ p.id }}</span>
+            </div>
+            <div class="content">{{ p.content_html }}</div>
+            <form class="row" method="post" action="{{ url_for('like' if not p.i_like else 'unlike', post_id=p.id) }}" style="margin-top:.5rem">
+                <button class="btn secondary" type="submit">{{ '♥ Unlike' if p.i_like else '♡ Like' }}</button>
+                <span class="meta">{{ p.like_count }} likes</span>
+                <span class="meta">{{ p.comment_count }} comments</span>
+            </form>
+        </div>
+        {% else %}
+        <div class="card">No posts yet.</div>
+        {% endfor %}
+
+        <div class="row" style="justify-content:space-between; margin-top:1rem">
+            {% if has_prev %}
+            <a class="btn secondary" href="{{ url_for('posts_all', user=username, page=page-1) }}">← Newer</a>
+            {% else %}
+            <span></span>
+            {% endif %}
+            {% if has_next %}
+            <a class="btn" href="{{ url_for('posts_all', user=username, page=page+1) }}">Older →</a>
+            {% endif %}
+        </div>
+    </main>
+
+    <aside class="col-side">
+        <div class="card small">
+            <div class="meta">Filter by user</div>
+            <form method="get" action="{{ url_for('posts_all') }}" class="row" style="margin-top:.5rem">
+                <input name="user" placeholder="username" value="{{ username or '' }}" style="flex:1">
+                <button class="btn secondary" type="submit">Apply</button>
+            </form>
+        </div>
+
+        <div class="card small">
+            <div class="meta">Trending</div>
+            {% if trending %}
+            <div class="row" style="flex-wrap:wrap; gap:.4rem">
+                {% for t in trending %}
+                <a class="chip" href="{{ url_for('tag', tag=t['tag']) }}">#{{ t['tag'] }}</a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="meta">No trending tags yet.</div>
+            {% endif %}
+        </div>
+    </aside>
+</div>
+{% endblock %}

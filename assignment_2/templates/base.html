@@ -7,31 +7,32 @@
   <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
-  <nav>
-    <span class="headerTitle">XSS Social</span>
-    <a href="{{ url_for('feed_vuln') }}">Feed (vulnerable)</a>
-    <a href="{{ url_for('feed_safe') }}">Feed (safe)</a>
-    {% if me %}
-      <a href="{{ url_for('feed_following') }}">Following</a>
-      <a href="{{ url_for('compose') }}">Compose</a>
-      <a href="{{ url_for('profile', username=me['username']) }}">My profile</a>
-    {% endif %}
-    <div style="flex:1"></div>
-    {% if me %}
-      <span class="meta">@{{ me['username'] }}</span>
-      <a href="{{ url_for('logout') }}">Logout</a>
-    {% else %}
-      <a href="{{ url_for('login') }}">Login</a>
-      <a href="{{ url_for('register') }}">Register</a>
-    {% endif %}
-  </nav>
+<nav>
+  <span class="headerTitle">XSS Social</span>
+  <a href="{{ url_for('feed_vuln') }}">Feed (vulnerable)</a>
+  <a href="{{ url_for('feed_safe') }}">Feed (safe)</a>
+  <a href="{{ url_for('posts_all') }}">All posts</a>
+  {% if me %}
+  <a href="{{ url_for('feed_following') }}">Following</a>
+  <a href="{{ url_for('compose') }}">Compose</a>
+  <a href="{{ url_for('profile', username=me['username']) }}">My profile</a>
+  {% endif %}
+  <div style="flex:1"></div>
+  {% if me %}
+  <span class="meta">@{{ me['username'] }}</span>
+  <a href="{{ url_for('logout') }}">Logout</a>
+  {% else %}
+  <a href="{{ url_for('login') }}">Login</a>
+  <a href="{{ url_for('register') }}">Register</a>
+  {% endif %}
+</nav>
 
-  <div class="container">
-    {% for cat, msg in get_flashed_messages(with_categories=true) %}
-      <div class="flash {{cat}}">{{ msg }}</div>
-    {% endfor %}
+<div class="container">
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}
+  <div class="flash {{cat}}">{{ msg }}</div>
+  {% endfor %}
 
-    {% block content %}{% endblock %}
-  </div>
+  {% block content %}{% endblock %}
+</div>
 </body>
 </html>

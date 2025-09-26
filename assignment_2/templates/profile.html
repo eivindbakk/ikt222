@@ -1,14 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- Page-local fix: keep right-side nav items on the far right -->
+<style>
+  nav { display:flex; align-items:center; }
+  nav span.meta { margin-left:auto; }         /* logged in */
+  nav a[href$="/login"] { margin-left:auto; } /* logged out */
+</style>
+
 <div class="layout">
   <main class="col-main">
     <div class="card">
       <h2>@{{ user.username }}</h2>
       <p class="meta">Joined: {{ user.created_at }}</p>
       {% if prof and prof.bio %}
-        <p class="content">{{ prof.bio }}</p>
+      <p class="content">{{ prof.bio }}</p>
       {% else %}
-        <p class="meta">No bio yet.</p>
+      <p class="meta">No bio yet.</p>
       {% endif %}
       <div class="row" style="margin-top:.6rem">
         <span class="meta">{{ stats.posts }} posts</span>
@@ -17,27 +24,27 @@
       </div>
 
       {% if is_me %}
-        <form method="post" style="margin-top:.8rem">
-          <textarea name="bio" rows="3" placeholder="Write a short bio…">{{ prof.bio if prof else '' }}</textarea>
-          <div style="height:.5rem"></div>
-          <button class="btn">Save bio</button>
-        </form>
+      <form method="post" style="margin-top:.8rem">
+        <textarea name="bio" rows="3" placeholder="Write a short bio…">{{ prof.bio if prof else '' }}</textarea>
+        <div style="height:.5rem"></div>
+        <button class="btn">Save bio</button>
+      </form>
       {% else %}
-        {% if me %}
-          <form method="post" action="{{ url_for('unfollow' if i_follow else 'follow', username=user.username) }}" style="margin-top:.5rem">
-            <button class="btn">{{ 'Unfollow' if i_follow else 'Follow' }}</button>
-          </form>
-        {% endif %}
+      {% if me %}
+      <form method="post" action="{{ url_for('unfollow' if i_follow else 'follow', username=user.username) }}" style="margin-top:.5rem">
+        <button class="btn">{{ 'Unfollow' if i_follow else 'Follow' }}</button>
+      </form>
+      {% endif %}
       {% endif %}
     </div>
 
     {% for p in posts %}
-      <div class="card">
-        <div class="meta">{{ p.created_at }}</div>
-        <div class="content">{{ p.content }}</div>
-      </div>
+    <div class="card">
+      <div class="meta">{{ p.created_at }}</div>
+      <div class="content">{{ p.content }}</div>
+    </div>
     {% else %}
-      <div class="card">No posts yet.</div>
+    <div class="card">No posts yet.</div>
     {% endfor %}
   </main>
 

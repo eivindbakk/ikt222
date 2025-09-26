@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- Page-local fix: keep right-side nav items on the far right -->
+<style>
+  nav { display:flex; align-items:center; }
+  nav span.meta { margin-left:auto; }         /* logged in */
+  nav a[href$="/login"] { margin-left:auto; } /* logged out */
+</style>
+
 <h2>Compose</h2>
 <form method="post" class="card">
   <textarea name="content" rows="4" placeholder="What's happening?" required></textarea>
