@@ -11,6 +11,9 @@
       <button type="submit">Login</button>
       {% if error %}<div class="error">{{ error }}</div>{% endif %}
     </form>
-    <p>Or use OAuth2 (GitHub): <a href="{{ url_for('oauth_client.login_github') }}">Sign in with GitHub</a></p>
+    <p>Or use OAuth2 (GitHub):
+  <a href="{{ url_for('oauth_client.login_github') }}">Sign in with GitHub</a>
+</p>
+
   </div>
 {% endblock %}

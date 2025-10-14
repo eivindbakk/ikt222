@@ -1,6 +1,10 @@
 import os
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).with_name(".env"))
+
 
 from flask import Flask, render_template, request, redirect, session, url_for, abort, jsonify
 from flask_limiter import Limiter
@@ -175,6 +179,11 @@ def init_db():
     with app.app_context():
         db.create_all()
         print("Database initialized.")
+
+        from oauth_client import bp_oauth_client, init_oauth
+
+        init_oauth(app)  # registers the GitHub OAuth client
+        app.register_blueprint(bp_oauth_client)
         
 if __name__ == "__main__":
     with app.app_context():
