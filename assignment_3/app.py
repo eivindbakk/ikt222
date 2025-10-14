@@ -1,11 +1,8 @@
 import os
 from datetime import datetime, timedelta
-from urllib.parse import urlparse
-
 from flask import Flask, render_template, request, redirect, session, url_for, abort, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import pyotp, qrcode, io, base64
 
@@ -23,6 +20,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Secure cookie flags
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
 
@@ -72,7 +70,7 @@ def register():
         pwd_hash = hash_password(password)
         # Generate 2FA secret at registration
         secret = pyotp.random_base32()
-        user = User(username=username, password_hash=pwd_hash, twofa_secret=secret)
+        user = User(username=username, password_hash=pwd_hash, totp_secret=secret)
         db.session.add(user)
         db.session.commit()
         session["user_id"] = user.id
@@ -86,7 +84,7 @@ def setup_2fa():
     if not user:
         return redirect(url_for("login"))
     # generate otpauth uri and QR
-    totp = pyotp.TOTP(user.twofa_secret)
+    totp = pyotp.TOTP(user.totp_secret)
     issuer = "FlaskSecureAuthDemo"
     uri = totp.provisioning_uri(name=user.username, issuer_name=issuer)
     # Make QR code and embed as base64
@@ -95,10 +93,18 @@ def setup_2fa():
     img.save(buf, format="PNG")
     b64 = base64.b64encode(buf.getvalue()).decode("ascii")
     data_uri = f"data:image/png;base64,{b64}"
-    return render_template("setup_2fa.html", data_uri=data_uri, secret=user.twofa_secret)
+    return render_template("setup_2fa.html", data_uri=data_uri, secret=user.totp_secret)
+
+def _login_username_limit_key():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        if username:
+            return f"username:{username}"
+    return get_remote_address()
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10/minute")
+@limiter.limit("5/minute", key_func=_login_username_limit_key, methods=["POST"])
 def login():
     if request.method == "POST":
         validate_csrf()
@@ -136,10 +142,13 @@ def verify_2fa():
     if not user_id:
         return redirect(url_for("login"))
     user = User.query.get(user_id)
+    if not user or not user.totp_secret:
+        session.pop("pending_2fa_user_id", None)
+        return redirect(url_for("login"))
     if request.method == "POST":
         validate_csrf()
         code = request.form.get("code","").strip()
-        totp = pyotp.TOTP(user.twofa_secret)
+        totp = pyotp.TOTP(user.totp_secret)
         if totp.verify(code, valid_window=1):
             session.pop("pending_2fa_user_id", None)
             session["user_id"] = user.id
