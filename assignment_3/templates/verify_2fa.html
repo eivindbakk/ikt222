@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Enter 2FA Code</h2>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Authenticator Code</label>
+      <input name="code" type="number" inputmode="numeric" pattern="[0-9]*" required>
+      <button type="submit">Verify</button>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    </form>
+  </div>
+{% endblock %}
