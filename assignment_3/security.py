@@ -1,4 +1,4 @@
-import os, secrets, bcrypt
+import secrets, bcrypt
 from flask import session, abort, request
 
 BCRYPT_ROUNDS = 12
@@ -20,5 +20,6 @@ def ensure_csrf_token():
 
 def validate_csrf():
     form_token = request.form.get("csrf_token","")
-    if not form_token or "csrf_token" not in session or form_token != session["csrf_token"]:
+    session_token = session.get("csrf_token")
+    if not form_token or not session_token or not secrets.compare_digest(form_token, session_token):
         abort(400, description="CSRF token invalid")
