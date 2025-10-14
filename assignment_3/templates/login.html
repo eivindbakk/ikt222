@@ -12,8 +12,7 @@
       {% if error %}<div class="error">{{ error }}</div>{% endif %}
     </form>
     <p>Or use OAuth2 (GitHub):
-  <a href="{{ url_for('oauth_client.login_github') }}">Sign in with GitHub</a>
-</p>
-
+      <a href="{{ url_for('oauth.login_github') }}">Sign in with GitHub</a>
+    </p>
   </div>
 {% endblock %}

@@ -1,85 +1,77 @@
 # oauth_client.py
-import os
-from flask import Blueprint, redirect, url_for, session, abort, current_app
+import os, secrets
+from flask import Blueprint, redirect, url_for, session
 from authlib.integrations.flask_client import OAuth
-from models import db, OAuthAccount, User
 
-bp_oauth_client = Blueprint("oauth_client", __name__)
+from models import db, User, OAuthAccount
+from security import hash_password
+
+oauth = OAuth()
 
 def init_oauth(app):
-    client_id = os.getenv("GITHUB_CLIENT_ID")
-    client_secret = os.getenv("GITHUB_CLIENT_SECRET")
-    if not client_id or not client_secret:
-        raise RuntimeError("Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env")
-
-    oauth = OAuth(app)
+    """Kalles fra app.py for å initialisere Authlib-klienten."""
+    oauth.init_app(app)
     oauth.register(
-        name='github',
-        client_id=client_id,
-        client_secret=client_secret,
-        access_token_url='https://github.com/login/oauth/access_token',
-        authorize_url='https://github.com/login/oauth/authorize',
-        api_base_url='https://api.github.com/',
-        client_kwargs={'scope': 'read:user user:email'},
+        name="github",
+        client_id=os.getenv("GITHUB_CLIENT_ID"),
+        client_secret=os.getenv("GITHUB_CLIENT_SECRET"),
+        access_token_url="https://github.com/login/oauth/access_token",
+        authorize_url="https://github.com/login/oauth/authorize",
+        api_base_url="https://api.github.com/",
+        client_kwargs={"scope": "read:user user:email"},
     )
-    app.oauth = oauth
+
+bp_oauth_client = Blueprint("oauth", __name__)
 
 @bp_oauth_client.route("/login/github")
 def login_github():
-    redirect_uri = os.getenv("GITHUB_REDIRECT_URI") or url_for("oauth_client.github_callback", _external=True)
-    return current_app.oauth.github.authorize_redirect(redirect_uri)
+    redirect_uri = os.getenv("GITHUB_REDIRECT_URI") or url_for("oauth.auth_github", _external=True)
+    return oauth.github.authorize_redirect(redirect_uri)
 
 @bp_oauth_client.route("/callback/github")
-def github_callback():
-    oauth = current_app.oauth
-    token = oauth.github.authorize_access_token()
-    if not token:
-        abort(400, "No token from provider")
-    profile = oauth.github.get('user').json()
-    email = profile.get("email")
-    if not email:
-        emails = oauth.github.get('user/emails').json()
-        primary = next((e for e in emails if e.get("primary")), None)
-        email = primary.get("email") if primary else None
+def auth_github():
+    token = oauth.github.authorize_access_token()  # validerer også state
+    userinfo = oauth.github.get("user").json()
+    # emails = oauth.github.get("user/emails").json()  # tilgjengelig ved behov
 
-    acct = OAuthAccount.query.filter_by(provider="github", provider_user_id=str(profile["id"])).first()
-    if not acct:
-        acct = OAuthAccount(
+    gh_id = str(userinfo.get("id"))
+    gh_login = (userinfo.get("login") or "").lower()
+
+    # Finn evt. eksisterende link
+    link = OAuthAccount.query.filter_by(provider="github", provider_user_id=gh_id).first()
+
+    if link:
+        user = User.query.get(link.user_id)
+    else:
+        # Link til innlogget lokal bruker, ellers opprett ny
+        if "user_id" in session:
+            user = User.query.get(session["user_id"])
+        else:
+            base = gh_login or f"github_{gh_id}"
+            username = base
+            i = 1
+            while User.query.filter_by(username=username).first():
+                i += 1
+                username = f"{base}{i}"
+            user = User(
+                username=username,
+                password_hash=hash_password(secrets.token_urlsafe(16)),  # random pass
+            )
+            db.session.add(user)
+            db.session.flush()  # får user.id
+
+        link = OAuthAccount(
             provider="github",
-            provider_user_id=str(profile["id"]),
-            email=email,
-            name=profile.get("name") or profile.get("login"),
+            provider_user_id=gh_id,
+            user_id=user.id,
             access_token=token.get("access_token"),
         )
-        db.session.add(acct)
-        db.session.commit()
+        db.session.add(link)
 
-    if "user_id" not in session:
-        user = User.query.filter_by(username=email).first() if email else None
-        if not user:
-            user = User(username=email or f'gh_{profile["id"]}', password_hash="oauth_only")
-            db.session.add(user)
-            db.session.commit()
-        acct.user_id = user.id
-        db.session.commit()
-        session["user_id"] = user.id
-        session["username"] = user.username
+    db.session.commit()
 
-    def init_oauth(app):
-        cid = os.getenv("GITHUB_CLIENT_ID", "")
-        csec = os.getenv("GITHUB_CLIENT_SECRET", "")
-        if not cid or cid.startswith("your_") or not csec:
-            raise RuntimeError("Set real GITHUB_CLIENT_ID/SECRET in .env")
-        oauth = OAuth(app)
-        oauth.register(
-            name='github',
-            client_id=cid,
-            client_secret=csec,
-            access_token_url='https://github.com/login/oauth/access_token',
-            authorize_url='https://github.com/login/oauth/authorize',
-            api_base_url='https://api.github.com/',
-            client_kwargs={'scope': 'read:user user:email'},
-        )
-        app.oauth = oauth
-
+    # Logg inn brukeren i appen
+    session.clear()
+    session["user_id"] = user.id
+    session["username"] = user.username
     return redirect(url_for("dashboard"))
