@@ -27,10 +27,9 @@ Open http://localhost:5000/
 
 - **SQLite + SQLAlchemy** user store.
 - **Password hashing** with bcrypt.
-- **Brute‑force protection**: rate limiting (Flask‑Limiter) per **IP** and per **username**, plus **lockout 5 min** after 3 failed attempts.
+- **Brute‑force protection**: rate limiting (Flask‑Limiter) and **lockout 5 min** after 3 failed attempts.
 - **2FA** using `pyotp` with QR‑code provisioning.
-- **OAuth2 client** (GitHub) via Authlib — set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`; OAuth sign-ins are
-  funnelled through the same TOTP verification/setup as password logins.
+- **OAuth2 client** (GitHub) via Authlib — set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`.
 - **Mock OAuth2 provider** for the provided testing script: `/approve_auth`, `/token`, `/protected_resource`.
 
 ## Running the provided OAuth2 test
@@ -58,7 +57,7 @@ print(requests.get("http://localhost:5000/protected_resource", headers=h).text)
 ## Security notes (high‑level)
 
 - Use **strong hashing** (bcrypt, cost=12) and **unique usernames**; never store plaintext passwords.
-- **CSRF tokens** on forms; **HttpOnly** + **Secure** cookies.
+- **CSRF tokens** on forms; **HttpOnly** cookies.
 - **Lockout** and **rate‑limiting** to reduce brute‑force risk.
 - **2FA** significantly raises the bar against credential stuffing.
 - Store OAuth tokens **securely** (consider encryption/rotation in production).

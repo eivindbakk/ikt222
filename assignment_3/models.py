@@ -5,18 +5,12 @@ db = SQLAlchemy()
 
 class User(db.Model):
     __tablename__ = "users"
-    __table_args__ = (
-        db.UniqueConstraint("oauth_provider", "oauth_sub", name="uq_users_oauth_identity"),
-    )
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(128), nullable=False)
-    totp_secret = db.Column(db.String(64), nullable=True)
+    twofa_secret = db.Column(db.String(64), nullable=True)
     failed_attempts = db.Column(db.Integer, default=0, nullable=False)
     lock_until = db.Column(db.DateTime, nullable=True)
-    oauth_provider = db.Column(db.String(30), nullable=True)
-    oauth_sub = db.Column(db.String(120), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 class OAuthAccount(db.Model):

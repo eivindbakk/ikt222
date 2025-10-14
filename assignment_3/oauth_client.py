@@ -1,11 +1,7 @@
 import os
-import secrets
-
-import pyotp
 from flask import Blueprint, redirect, url_for, session, request, abort
 from authlib.integrations.flask_client import OAuth
 from models import db, OAuthAccount, User
-from security import hash_password
 
 bp_oauth_client = Blueprint("oauth_client", __name__)
 
@@ -51,62 +47,25 @@ def github_callback():
             provider_user_id=str(profile["id"]),
             email=email,
             name=profile.get("name") or profile.get("login"),
+            access_token=token.get("access_token"),
         )
         db.session.add(acct)
-
-    # Always refresh token + profile metadata we care about
-    acct.access_token = token.get("access_token")
-    if email:
-        acct.email = email
-    acct.name = profile.get("name") or profile.get("login")
-    db.session.commit()
+        db.session.commit()
 
     # Auto-link or auto-provision a local user if desired
     if "user_id" not in session:
-        # Attempt to reuse an already linked account first
-        user = acct.user_id and User.query.get(acct.user_id)
-
-        if not user and email:
+        # If a user exists with same username/email, link it; otherwise create a new local user
+        user = None
+        if email:
             user = User.query.filter_by(username=email).first()
-
-        requires_totp_setup = False
         if not user:
-            # Create a shadow user with a random (hashed) password and a TOTP secret
-            user = User(
-                username=email or f'gh_{profile["id"]}',
-                password_hash=hash_password(secrets.token_urlsafe(32)),
-                oauth_provider="github",
-                oauth_sub=str(profile["id"]),
-                totp_secret=pyotp.random_base32(),
-            )
+            # Create a "shadow" user with no password (OAuth-only)
+            user = User(username=email or f'gh_{profile["id"]}', password_hash="oauth_only")
             db.session.add(user)
             db.session.commit()
-            requires_totp_setup = True
-        else:
-            # Ensure provider identity is recorded
-            updated = False
-            if not user.oauth_provider or not user.oauth_sub:
-                user.oauth_provider = "github"
-                user.oauth_sub = str(profile["id"])
-                updated = True
-            if not user.totp_secret:
-                user.totp_secret = pyotp.random_base32()
-                updated = True
-                requires_totp_setup = True
-            if updated:
-                db.session.commit()
-
         acct.user_id = user.id
         db.session.commit()
-
-        if requires_totp_setup:
-            session["user_id"] = user.id
-            session["username"] = user.username
-            return redirect(url_for("setup_2fa"))
-
-        session.pop("user_id", None)
-        session.pop("username", None)
-        session["pending_2fa_user_id"] = user.id
-        return redirect(url_for("verify_2fa"))
+        session["user_id"] = user.id
+        session["username"] = user.username
 
     return redirect(url_for("dashboard"))
