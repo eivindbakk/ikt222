@@ -127,18 +127,59 @@ def verify_2fa():
     user_id = session.get("pending_2fa_user_id")
     if not user_id:
         return redirect(url_for("login"))
+
     user = User.query.get(user_id)
+    if not user:
+        # stale session, user removed; reset flow
+        session.pop("pending_2fa_user_id", None)
+        return redirect(url_for("login"))
+
+    # If already locked, block both GET and POST
+    now = datetime.utcnow()
+    if user.lock_until and user.lock_until > now:
+        remaining = int((user.lock_until - now).total_seconds())
+        return render_template(
+            "verify_2fa.html",
+            error=f"Account locked. Try again in {remaining} seconds.",
+            csrf_token=session["csrf_token"]
+        )
+
     if request.method == "POST":
         validate_csrf()
-        code = request.form.get("code","").strip()
+        code = (request.form.get("code") or "").strip()
         totp = pyotp.TOTP(user.twofa_secret)
+
         if totp.verify(code, valid_window=1):
+            # Success: reset lock counters and finish login
+            user.failed_attempts = 0
+            user.lock_until = None
+            db.session.commit()
             session.pop("pending_2fa_user_id", None)
             session["user_id"] = user.id
             session["username"] = user.username
             return redirect(url_for("dashboard"))
         else:
-            return render_template("verify_2fa.html", error="Invalid code", csrf_token=session["csrf_token"])
+            # Bad code: increment attempts and possibly lock (same policy as password)
+            user.failed_attempts = (user.failed_attempts or 0) + 1
+            if user.failed_attempts >= 3:
+                user.lock_until = now + timedelta(minutes=5)
+                user.failed_attempts = 0  # mirror your password flow reset
+                db.session.commit()
+                # clear pending 2FA so they must re-login after lock expires
+                session.pop("pending_2fa_user_id", None)
+                return render_template(
+                    "login.html",
+                    error="Too many invalid 2FA codes. Account locked for 5 minutes.",
+                    csrf_token=session["csrf_token"]
+                )
+            db.session.commit()
+            return render_template(
+                "verify_2fa.html",
+                error="Invalid code",
+                csrf_token=session["csrf_token"]
+            )
+
+    # GET: show form
     return render_template("verify_2fa.html", csrf_token=session["csrf_token"])
 
 @app.route("/dashboard")
@@ -170,4 +211,6 @@ def init_db():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=bool(int(os.getenv("FLASK_DEBUG", "1"))))
+    # Bind explicitly to localhost so Flask prints localhost (not 127.0.0.1)
+    app.run(host="localhost", port=5000, debug=bool(int(os.getenv("FLASK_DEBUG", "1"))))
+

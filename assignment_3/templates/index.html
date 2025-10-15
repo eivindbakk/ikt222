@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="card">
+<div class="card">
     <h2>Welcome</h2>
     <p>This demo includes:</p>
     <ul>
-      <li>SQLite + SQLAlchemy for persistent user storage</li>
-      <li>Password hashing with bcrypt</li>
-      <li>Brute-force protection: rate limiting + lockout after 3 failures</li>
-      <li>Time-based One-Time Password (TOTP) 2FA with QR setup</li>
-      <li>OAuth2 client (GitHub) using Authorization Code Flow</li>
-      <li>A tiny mock OAuth2 provider to run the provided test script</li>
+        <li>SQLite + SQLAlchemy for persistent user storage</li>
+        <li>Password hashing with bcrypt</li>
+        <li>Brute-force protection: rate limiting + lockout after 3 wrong passwords or 2FA codes</li>
+        <li>Time-based One-Time Password (TOTP) 2FA with QR setup</li>
+        <li>OAuth2 client (GitHub) using Authorization Code Flow</li>
+        <li>A tiny mock OAuth2 provider to run the provided test script</li>
     </ul>
     <p>Try the protected API: <code>GET /api/me</code> after login.</p>
-  </div>
+</div>
 {% endblock %}
