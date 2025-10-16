@@ -1,0 +1,36 @@
+# IDE
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.eggs/
+*.egg-info/
+build/
+dist/
+pip-wheel-metadata/
+
+# Environment
+.env
+**/.env
+.env.*
+**/.env.*
+*.env.local
+!*.env.example
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+auth.db
+instance/
+
+# OS
+.DS_Store
+Thumbs.db
