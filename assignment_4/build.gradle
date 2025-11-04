@@ -1,0 +1,55 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'idea'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation (
+    'org.eclipse.jetty.aggregate:jetty-all:9.4.24.v20191120',
+    'org.freemarker:freemarker:2.3.29',
+    'org.xerial:sqlite-jdbc:3.50.3.0',
+          'org.mindrot:jbcrypt:0.4',
+          'org.freemarker:freemarker:2.3.32',
+          'org.xerial:sqlite-jdbc:3.50.3.0',
+          'org.mindrot:jbcrypt:0.4',
+          'org.slf4j:slf4j-simple:2.0.13'
+  )
+
+  runtimeOnly 'org.slf4j:slf4j-simple:2.0.13'
+}
+
+application {
+  mainClass = 'IKT222.Assignment4.AppServer'
+}
+
+idea {
+  module {
+    outputDir file('build/classes/main')
+    testOutputDir file('build/classes/test')
+  }
+}
+
+task submission(type: Zip) {
+  group = 'Submission'
+  description = 'Generates Zip archive suitable for submission.'
+
+  archiveFileName = 'submission.zip'
+  destinationDirectory = project.rootDir
+
+  from("$project.rootDir") {
+    exclude 'submission.zip', 'build', '.git', '.gradle', '.idea'
+  }
+
+  doFirst {
+    assert file("report.pdf").exists()
+  }
+
+  doLast {
+    logger.warn("submission.zip generated.")
+  }
+}
